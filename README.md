@@ -352,3 +352,10 @@ Relatedly, `length(tracks)` on an N×3 matrix returns `max(N,3)`. With fewer tha
 **Counts are localisations, not molecules.** `extraData(1)` and the ON/OFF Sox2 counts sum localisations across frames, so one molecule resident for 20 frames contributes 20. These are not counts of binding events and should not be compared across cells with different track-length distributions without normalising. The trajectory data needed to do this properly (`trackedPar`) is already computed but unused for these statistics.
 
 **Two persistence measures, computed differently.** Dwell time comes from MTT trajectories; "specific binding" (`sox2AppearLong`) comes from a hand-rolled 1-pixel nearest-neighbour match between consecutive recorded frames, which bridges frames with no detections (the reset `soxInFrame = []` sits inside `if ~isempty(frame)`) and can increment more than once per frame. The two will not agree, and it is not documented which is authoritative. Deriving both from the trajectories would remove the discrepancy.
+
+---
+
+## 11. References
+The Batch_MTT_code is taken from McSwiggen et al., available at https://github.com/elifesciences-publications/SPT_LocAndTrack/tree/master.
+
+* McSwiggen, D. T. et al. (2019). **Evidence for DNA-mediated nuclear compartmentalization distinct from phase separation.** *eLife*, 8, e47098. https://doi.org/10.7554/eLife.47098
