@@ -321,28 +321,6 @@ If `idx` is empty or has one element, the loop body never runs and `m` retains a
 
 Note also that at line 241 `smtCorrection` is still an N×2 matrix, so `smtCorrection(1)` takes the first element by linear indexing.
 
-### 9.5 Residence-time fitting
-
-- **The correction formula is undocumented.** `(b−1)/(b/τ−1)` is not the common form `1/τ_true = 1/τ_obs − 1/τ_bleach`. It may be correct for how `bleach_rate` is defined here, but the definition is not recorded anywhere — the comment says "unit in second" while the name says *rate*. The value `6.37` is hard-coded with no provenance, no measurement date and no per-dataset re-measurement.
-- **The two fits use different model families.** The 1-component fit has a free constant offset `x(1)`; the 2-component fit does not and forces amplitudes to sum to 1. `TrueR` and `TrueR2` are therefore not directly comparable, and no model-selection test is performed between them.
-- **Label/value mismatch when `r(3) > r(2)`.** `TrueR2` uses `max(r(2), r(3))` for the long component, but the spreadsheet always reports `r(3)` as "Short Dwell Time" and `r(1)` as "Fraction". If the optimiser returns `r(3) > r(2)`, the reported short time equals the long one and the fraction refers to the *other* component. Worth sorting the components explicitly and reporting the fraction that matches.
-- **No fit diagnostics.** `lsqnonlin` is called with no bounds and its `exitflag`, residual and Jacobian are discarded, so negative or non-convergent parameters would pass through unnoticed. No confidence intervals are produced. Survival-curve bins are also not independent, so ordinary least squares on the CDF underestimates uncertainty; a maximum-likelihood fit to the durations would be better founded.
-- **Fixed 1 s binning** with a 0.5 s exposure gives roughly two frames per bin, which coarsens exactly the short-lived population the two-component fit is meant to resolve.
-
-### 9.6 `extraData(13)` is almost always zero
-
-`minDist` is initialised to zeros and only written for frames containing localisations. `min(minDist)` over the whole vector therefore returns 0 whenever any frame lacks a detection. It should be `min(minDist(minDist > 0))` or restricted to frames present in `tracks(:,1)`.
-
-### 9.7 `extraData(4)` mixes units
-
-Labelled "Percentage of Sox2 on GFP spot during ON state", it divides a **frame count** (`orSox`) by a **localisation count** (`length(tracks)`). The result is not a percentage of anything interpretable. Compare with `extraData(2)`, which is a genuine localisation count.
-
-Relatedly, `length(tracks)` on an N×3 matrix returns `max(N,3)`. With fewer than three localisations it silently returns 3.
-
-### 9.8 `cellSummaryData` preallocated to the wrong size (line 810)
-
-`cell(12,1)` is then filled to index 20. MATLAB grows it, so the output is correct, but the preallocation is misleading and hides the fact that 20 metrics exist.
-
 ---
 
 ## 10. Assumptions
