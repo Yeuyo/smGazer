@@ -1,6 +1,6 @@
 # smGazer Documentation
 
-Single-molecule tracking (SMT) analysis of Sox2 at a fluorescently labelled transcription locus, with per-frame transcriptional state assignment from two reporter channels.
+Single-molecule tracking (SMT) analysis of any molecule at a fluorescently labelled transcription locus, with per-frame transcriptional state assignment from two reporter channels.
 
 ---
 
@@ -11,8 +11,8 @@ For each cell in a directory tree, the script:
 1. **Groups TIFF files** into cells by parsing filenames, separating imaging stacks from bead calibration images and assigning each to a channel.
 2. **Computes channel registration offsets** from multi-colour bead images, using the 488 nm (GFP) channel as the reference.
 3. **Segments GFP and RFP spots frame by frame**, records their presence, their mean intensity, the GFP spot coordinates, and whether GFP and RFP colocalise. Colocalisation is used as the proxy for the transcriptionally **ON** state.
-4. **Localises and tracks single molecules** in the 640 nm channel (referred to throughout as Sox2) using the MTT-derived routines.
-5. **Measures proximity** of each Sox2 localisation to the (last known) GFP locus, per frame and split by ON/OFF state.
+4. **Localises and tracks single molecules** in the 640 nm channel (referred to throughout as SMT) using the MTT-derived routines.
+5. **Measures proximity** of each SMT localisation to the (last known) GFP locus, per frame and split by ON/OFF state.
 6. **Estimates residence time** by fitting the survival curve of track durations with one- and two-component exponentials, then applying a photobleaching correction.
 7. **Writes** per-cell spreadsheets and MATLAB figures, plus one pooled dwell-time spreadsheet for the whole run.
 
@@ -53,11 +53,9 @@ The script searches `mainDir` recursively (`**/*.tif`) and infers everything fro
 
 | Filename ends with | Channel | Variable |
 |---|---|---|
-| `488 nm.tif` | GFP reporter | slot 1 |
-| `561 nm.tif` | RFP reporter | slot 2 |
-| `640.tif` | SMT / Sox2 | slot 3 |
-
-Note the inconsistency: the first two include `nm`, the third does not.
+| `488.tif` | GFP reporter | slot 1 |
+| `561.tif` | RFP reporter | slot 2 |
+| `640.tif` | SMT | slot 3 |
 
 ### Beads vs. cell images
 
@@ -103,7 +101,7 @@ The comment at line 33 — "Specific GFP/RFP to use after run the analysis at le
 |---|---|---|
 | `minGFP` / `maxGFP` | 4 / 50 | Accepted size range (pixels) of a connected component to count as a GFP spot |
 | `minRFP` / `maxRFP` | 4 / 50 | Same, for RFP |
-| `distTol` | 4 | Distance threshold **in pixels** for GFP–RFP colocalisation *and* for Sox2-at-locus |
+| `distTol` | 4 | Distance threshold **in pixels** for GFP–RFP colocalisation *and* for SMT-at-locus |
 | `minBeads` | 4 | Minimum pixels for a bead in the SMT bead image (applied to the SMT channel only) |
 | `gfpMobTol` | 12 | Maximum displacement (pixels) of the GFP spot between detections; larger jumps are rejected as a different spot |
 
@@ -210,11 +208,11 @@ TrueR  = (bleach_rate − 1) / (bleach_rate/x(3) − 1)
 TrueR2 = (bleach_rate − 1) / (bleach_rate/max(r(2),r(3)) − 1)
 ```
 
-### Stage 6 — Sox2-at-locus statistics (lines 567–789)
+### Stage 6 — SMT-at-locus statistics (lines 567–789)
 
 `onFrame` is built from colocalised frames, filling in runs separated by exactly `frameIntervals`. `offFrame` is **every other frame**. For each subset, the script counts localisations within `distTol` of the locus and the number of frames containing at least one.
 
-A separate persistence measure, `sox2AppearLong`, counts a localisation as "specific binding" if a within-tolerance localisation in the previous recorded frame lay within **1 pixel** of it. This is computed independently of the MTT trajectories.
+A separate persistence measure, `smtAppearLong`, counts a localisation as "specific binding" if a within-tolerance localisation in the previous recorded frame lay within **1 pixel** of it. This is computed independently of the MTT trajectories.
 
 ---
 
@@ -236,26 +234,26 @@ A separate persistence measure, `sox2AppearLong`, counts a localisation as "spec
 
 | # | Label as written | Computed as |
 |---|---|---|
-| 1 | Total number of Sox2 detected | `length(tracks)` — total **localisations**, not molecules |
-| 2 | Number of Sox2 on GFP spot during ON state | Σ localisations within `distTol` over ON frames |
-| 3 | % of time GFP spot is covered by Sox2 during ON | ON frames with ≥1 near localisation / ON frames |
-| 4 | % of Sox2 on GFP spot during ON | ON frames with ≥1 near localisation / total localisations |
-| 5 | Number of Sox2 on last detected GFP spot during OFF | as #2, over OFF frames |
-| 6 | Number of Sox2 on GFP spot when only GFP detected | frames with col1=1, col2=0 |
-| 7 | Number of Sox2 on last GFP spot when only RFP detected | frames with col1=0, col2=1 |
+| 1 | Total number of SMT detected | `length(tracks)` — total **localisations**, not molecules |
+| 2 | Number of SMT on GFP spot during ON state | Σ localisations within `distTol` over ON frames |
+| 3 | % of time GFP spot is covered by SMT during ON | ON frames with ≥1 near localisation / ON frames |
+| 4 | % of SMT on GFP spot during ON | ON frames with ≥1 near localisation / total localisations |
+| 5 | Number of SMT on last detected GFP spot during OFF | as #2, over OFF frames |
+| 6 | Number of SMT on GFP spot when only GFP detected | frames with col1=1, col2=0 |
+| 7 | Number of SMT on last GFP spot when only RFP detected | frames with col1=0, col2=1 |
 | 8 | …when neither GFP nor RFP detected | `#5 − #6 − #7` (derived, not measured) |
-| 9 | Number of Sox2 detected during ON state | all localisations in ON frames |
+| 9 | Number of SMT detected during ON state | all localisations in ON frames |
 | 10 | Number of frames in ON state | |
-| 11 | Number of Sox2 detected during OFF state | all localisations in OFF frames |
+| 11 | Number of SMT detected during OFF state | all localisations in OFF frames |
 | 12 | Number of frames in OFF state | |
-| 13 | Minimum distance of Sox2 to GFP | `min(minDist)` over all frames — see 9.6 |
-| 14 | % of time GFP spot covered by Sox2 during OFF | |
+| 13 | Minimum distance of SMT to GFP | `min(minDist)` over all frames — see 9.6 |
+| 14 | % of time GFP spot covered by SMT during OFF | |
 | 15 | Mean minimum distance, ON state | **µm** |
 | 16 | Mean minimum distance, OFF state | **µm** |
 | 17 | Visiting frequency, ON | `#2 / #10 × 100` |
 | 18 | Visiting frequency, OFF | `#5 / #12 × 100` |
-| 19 | Number of frames Sox2 on GFP spot, ON | |
-| 20 | Number of frames Sox2 on GFP spot, OFF | |
+| 19 | Number of frames SMT on GFP spot, ON | |
+| 20 | Number of frames SMT on GFP spot, OFF | |
 
 ### `tracks`
 
@@ -277,13 +275,13 @@ Written to `<cellFolder>/Data/`, prefixed with the GFP filename minus extension:
 | `_Summary.xls` | The 20 labelled `extraData` values |
 | `_dwell_time.xls` | Long dwell time (`TrueR2`), fraction (`r(1)`), short dwell time (`r(3)`) |
 | `_max_gfp_timing.xls` | Frame indices at maximum GFP intensity |
-| `_sox_timing.xls` | Frame indices with ≥1 Sox2 near the locus |
+| `_smt_timing.xls` | Frame indices with ≥1 SMT near the locus |
 | `_signal_intensity.fig` | GFP (×3) and RFP mean intensity bars |
-| `_signal_intensity_with_sox.fig` | As above with Sox2 occurrence overlaid |
-| `_sox2_history.fig` | Localisations per frame |
-| `_time_lapse.fig` | GFP presence, Sox2 presence, colocalisation markers |
-| `_sox_number_frames.fig` | Sox2 count and "specific binding" count per frame |
-| `_sox_motif.fig` | Cumulative Sox2 occurrence |
+| `_signal_intensity_with_smt.fig` | As above with SMT occurrence overlaid |
+| `_smt_history.fig` | Localisations per frame |
+| `_time_lapse.fig` | GFP presence, SMT presence, colocalisation markers |
+| `_smt_number_frames.fig` | SMT count and "specific binding" count per frame |
+| `_smt_motif.fig` | Cumulative SMT occurrence |
 | `_GFP_Frame_N.fig`, `_RFP_Frame_N.fig` | Per-frame annotated images (when plotting enabled) |
 
 And in `mainDir`: **`Summary_dwell_time.xls`** — long dwell time, fraction, short dwell time, one row per cell index. Rows for skipped cells are blank, and there is **no cell-identifier column**, so rows are only interpretable by position.
@@ -327,9 +325,9 @@ Note also that at line 241 `smtCorrection` is still an N×2 matrix, so `smtCorre
 
 **Locus position is carried forward.** During OFF frames the "GFP spot" is the last known position, so OFF-state proximity is measured against a stale coordinate. The longer the OFF stretch, the more chromatin motion accumulates and the more the measured distances are inflated. `gfpMobTol = 12 px` bounds the per-detection jump but not the drift across an undetected gap.
 
-**Counts are localisations, not molecules.** `extraData(1)` and the ON/OFF Sox2 counts sum localisations across frames, so one molecule resident for 20 frames contributes 20. These are not counts of binding events and should not be compared across cells with different track-length distributions without normalising. The trajectory data needed to do this properly (`trackedPar`) is already computed but unused for these statistics.
+**Counts are localisations, not molecules.** `extraData(1)` and the ON/OFF SMT counts sum localisations across frames, so one molecule resident for 20 frames contributes 20. These are not counts of binding events and should not be compared across cells with different track-length distributions without normalising. The trajectory data needed to do this properly (`trackedPar`) is already computed but unused for these statistics.
 
-**Two persistence measures, computed differently.** Dwell time comes from MTT trajectories; "specific binding" (`sox2AppearLong`) comes from a hand-rolled 1-pixel nearest-neighbour match between consecutive recorded frames, which bridges frames with no detections (the reset `soxInFrame = []` sits inside `if ~isempty(frame)`) and can increment more than once per frame. The two will not agree, and it is not documented which is authoritative. Deriving both from the trajectories would remove the discrepancy.
+**Two persistence measures, computed differently.** Dwell time comes from MTT trajectories; "specific binding" (`smtAppearLong`) comes from a hand-rolled 1-pixel nearest-neighbour match between consecutive recorded frames, which bridges frames with no detections (the reset `smtInFrame = []` sits inside `if ~isempty(frame)`) and can increment more than once per frame. The two will not agree, and it is not documented which is authoritative. Deriving both from the trajectories would remove the discrepancy.
 
 ---
 

@@ -1,6 +1,5 @@
 clear; clc; close all; imtool close all;
-mainDir = 'G:\Bitong\Mode 1 cells_RFP cannot be detected 1'; numb = 2;
-% mainDir = 'D:\Data\Bitong\20230726'; numb = 2;
+mainDir = 'G:\data'; numb = 2;
 
 % Adjusting value for minimum and maximum gfp/rfp signals, colocalisation
 % and mobility
@@ -116,13 +115,13 @@ for n = 1 : length(allFiles)
   if convertCharsToStrings(folderName{end}) == convertCharsToStrings(fileName{numb}) %
     cellFolder = allFiles(n).folder;
   end
-  if contains(allFiles(n).name, '488 nm.tif')
+  if contains(allFiles(n).name, '488.tif')
     if contains(upper(allFiles(n).name), 'BEADS')
       beadFiles(1) = allFiles(n).name;
     else
       cellFiles(1) = allFiles(n).name;
     end
-  elseif contains(allFiles(n).name, '561 nm.tif')
+  elseif contains(allFiles(n).name, '561.tif')
     if contains(upper(allFiles(n).name), 'BEADS')
       beadFiles(2) = allFiles(n).name;
     else
@@ -164,6 +163,7 @@ for n = 1 :  length(allCells)
 
   dirPath = allCells(n).folder;
   mkdir([dirPath, filesep, 'Data']);
+  %%
   stack = tiffread([dirPath, filesep, smtAFile]);
   smtRaw = stack(1).data;
   
@@ -241,6 +241,7 @@ for n = 1 :  length(allCells)
 
   smtCorrection = round(mean(smtCorrection, 1));
   rfpCorrection = round(mean(rfpCorrection, 1));
+  %%
 
   stackGFP = tiffread([allCells(n).folder, filesep, gfpFile]);
   stackRFP = tiffread([allCells(n).folder, filesep, rfpFile]);
@@ -438,6 +439,7 @@ for n = 1 :  length(allCells)
   end
   finalData(n).FileName = gfpFile;
   finalData(n).Cell_State_Counts = cellData;
+  %%
 
   data = localizeParticles_ASH("", impars, locpars, fishData);
   tracks = [data.frame, data.ctrsX, data.ctrsY];
@@ -545,9 +547,9 @@ for n = 1 :  length(allCells)
   histogram(Counts, max(Counts));
   title(gfpFile, 'interpreter', 'latex');
   xlabel('Frame', 'interpreter', 'latex');
-  ylabel('Number of Sox2 Detected', 'interpreter', 'latex');
+  ylabel('Number of SMT Detected', 'interpreter', 'latex');
   pause(1);
-  savefig([allCells(n).folder, filesep, 'Data', filesep, gfpFile(1:end-4), '_sox2_history.fig']);
+  savefig([allCells(n).folder, filesep, 'Data', filesep, gfpFile(1:end-4), '_smt_history.fig']);
 
   % adding last known gfp location to cellData
   finalFrame = size(cellData, 1);
@@ -575,65 +577,65 @@ for n = 1 :  length(allCells)
   onFrame = [onFrame; idx(m + 1)];
   onFrame = unique(onFrame);
   idx = onFrame;
-  coSox = 0; orSox = 0;
+  coSMT = 0; orSMT = 0;
   for m = 1 : length(idx)
     frame = find(tracks(:,1) == idx(m));
     if ~isempty(frame)
-      distSox = squareform(pdist([cellData(idx(m), 4:5); tracks(frame, 2:3)]));
-      distSox = distSox(1, 2:end);
-      coSox = coSox + sum(distSox < distTol);
-      if sum(distSox < distTol) > 0
-        orSox = orSox + 1;
+      distSMT = squareform(pdist([cellData(idx(m), 4:5); tracks(frame, 2:3)]));
+      distSMT = distSMT(1, 2:end);
+      coSMT = coSMT + sum(distSMT < distTol);
+      if sum(distSMT < distTol) > 0
+        orSMT = orSMT + 1;
       end
     end
   end
-  disp(['Total number of Sox2 detected: ' num2str(length(tracks))])
-  disp(['Number of Sox2 on GFP spot during ON state: ' num2str(coSox)])
-  disp(['Precentage of time GFP spot is covered by Sox2 during ON state: ' num2str((orSox/length(idx)) * 100), '%'])
-  disp(['Precentage of Sox2 on GFP spot during ON state: ' num2str((orSox/length(tracks)) * 100), '%'])
-  extraData(1:4) = [length(tracks), coSox, (orSox/length(idx)) * 100, (orSox/length(tracks)) * 100];
-  extraData(19) = orSox;
+  disp(['Total number of SMT detected: ' num2str(length(tracks))])
+  disp(['Number of SMT on GFP spot during ON state: ' num2str(coSMT)])
+  disp(['Precentage of time GFP spot is covered by SMT during ON state: ' num2str((orSMT/length(idx)) * 100), '%'])
+  disp(['Precentage of SMT on GFP spot during ON state: ' num2str((orSMT/length(tracks)) * 100), '%'])
+  extraData(1:4) = [length(tracks), coSMT, (orSMT/length(idx)) * 100, (orSMT/length(tracks)) * 100];
+  extraData(19) = orSMT;
 
   % Plotting timeline plots
-  soxInFrame = [];
+  smtInFrame = [];
   figure;
 %   plot(1:length(cellData), cellData(:, 1), 'b'); hold on; % GFP
   plot(1:length(cellData), cellData(:, 1), 'Color', '#76D7C4', 'linewidth', 1.25); hold on; % GFP
 %   plot(1:length(cellData), cellData(:, 2), 'r'); % RFP
 %   plot(1:length(cellData), cellData(:, 2), 'Color', '	#F08080', 'linewidth', 1.25); % RFP
-  sox2Appear = zeros(length(cellData), 1);
-  sox2AppearLong = zeros(length(cellData), 1);
-  sox2Number = zeros(length(cellData), 1);
+  smtAppear = zeros(length(cellData), 1);
+  smtAppearLong = zeros(length(cellData), 1);
+  smtNumber = zeros(length(cellData), 1);
   minDist = zeros(length(cellData), 1);
   for m = 1 : length(cellData)
     frame = find(tracks(:,1) == m);
     tracksInFrame = tracks(frame, 2:3);
     if ~isempty(frame)
-      distSox = squareform(pdist([cellData(m, 4:5); tracks(frame, 2:3)]));
-      distSox = distSox(1, 2:end);
-      minDist(m) = min(distSox);
-      if sum(distSox < distTol) > 0
-        sox2Appear(m) = 1;
-        sox2Number(m) = sum(distSox < distTol);
-        if size(soxInFrame, 1) > 0
-          for p = 1 : size(soxInFrame, 1)
-            distSoxH = squareform(pdist([soxInFrame(p, :); tracksInFrame(distSox < distTol, :)]));
-            distSoxH = distSoxH(1, 2:end);
-            if sum(distSoxH < 1) > 0
-              % a sox last longer than 2 frames!
-              sox2AppearLong(m) = sox2AppearLong(m) + 1;
+      distSMT = squareform(pdist([cellData(m, 4:5); tracks(frame, 2:3)]));
+      distSMT = distSMT(1, 2:end);
+      minDist(m) = min(distSMT);
+      if sum(distSMT < distTol) > 0
+        smtAppear(m) = 1;
+        smtNumber(m) = sum(distSMT < distTol);
+        if size(smtInFrame, 1) > 0
+          for p = 1 : size(smtInFrame, 1)
+            distSMTH = squareform(pdist([smtInFrame(p, :); tracksInFrame(distSMT < distTol, :)]));
+            distSMTH = distSMTH(1, 2:end);
+            if sum(distSMTH < 1) > 0
+              % a smt last longer than 2 frames!
+              smtAppearLong(m) = smtAppearLong(m) + 1;
             end
           end
         end
-        soxInFrame = tracksInFrame(distSox < distTol, :);
+        smtInFrame = tracksInFrame(distSMT < distTol, :);
       else
-        soxInFrame = [];
+        smtInFrame = [];
       end
     end
   end
   minDist = minDist .* impars.PixelSize;
-%   plot(1:length(cellData), sox2Appear, 'k'); % Sox 2 on last seen GFP spot
-  plot(1:length(cellData), sox2Appear, 'Color', '#BB8FCE', 'linewidth', 1.25); % Sox 2 on last seen GFP spot
+%   plot(1:length(cellData), smtAppear, 'k'); % SMT on last seen GFP spot
+  plot(1:length(cellData), smtAppear, 'Color', '#BB8FCE', 'linewidth', 1.25); % SMT on last seen GFP spot
   coFrame = find(cellData(:, 3) > 0);
   if ~isempty(coFrame)
     plot(coFrame, repelem(1.1, length(coFrame)), '+', 'linewidth', 1.25);
@@ -641,28 +643,28 @@ for n = 1 :  length(allCells)
   title(gfpFile, 'interpreter', 'latex');
   xlabel('Frame', 'interpreter', 'latex');
   ylabel('Presence of Proteins', 'interpreter', 'latex');
-%   legend('GFP', 'RFP', 'Sox 2', 'GFP-RFP colocalise', 'interpreter', 'latex') % legend edit
-  legend('GFP', 'Sox 2', 'GFP-RFP colocalise', 'interpreter', 'latex') 
+%   legend('GFP', 'RFP', 'SMT', 'GFP-RFP colocalise', 'interpreter', 'latex') % legend edit
+  legend('GFP', 'SMT', 'GFP-RFP colocalise', 'interpreter', 'latex') 
   ylim([0, 1.2]);
   pause(1);
   savefig([allCells(n).folder, filesep, 'Data', filesep, gfpFile(1:end-4), '_time_lapse.fig']);
-  % Sox plot
+  % SMT plot
   figure;
-  bar(1:length(sox2Number), [sox2Number'; sox2AppearLong'], 'BarWidth', 1);
+  bar(1:length(smtNumber), [smtNumber'; smtAppearLong'], 'BarWidth', 1);
   title(gfpFile, 'interpreter', 'latex');
   xlabel('Frame', 'interpreter', 'latex');
   ylabel('Number of Proteins', 'interpreter', 'latex');
-  legend('Sox 2', 'Specific Binding', 'interpreter', 'latex');
+  legend('SMT', 'Specific Binding', 'interpreter', 'latex');
   pause(1);
-  savefig([allCells(n).folder, filesep, 'Data', filesep, gfpFile(1:end-4), '_sox_number_frames.fig']);
+  savefig([allCells(n).folder, filesep, 'Data', filesep, gfpFile(1:end-4), '_smt_number_frames.fig']);
 
   figure;
-  plot(cumsum(sox2Appear));
+  plot(cumsum(smtAppear));
   title(gfpFile, 'interpreter', 'latex');
   xlabel('Frame', 'interpreter', 'latex');
-  ylabel('Cumulative Sox2 Occurrence', 'interpreter', 'latex');
+  ylabel('Cumulative SMT Occurrence', 'interpreter', 'latex');
   pause(1);
-  savefig([allCells(n).folder, filesep, 'Data', filesep, gfpFile(1:end-4), '_sox_motif.fig']);
+  savefig([allCells(n).folder, filesep, 'Data', filesep, gfpFile(1:end-4), '_smt_motif.fig']);
   
 %   idx = find(cellData(:, 3) == 1);
   idx = onFrame;
@@ -675,24 +677,24 @@ for n = 1 :  length(allCells)
   allFrame = 1:length(cellData);
   offFrame = allFrame(~ismember(allFrame, onFrame));
   idx = offFrame;
-  coSox = 0; orSox = 0; detectedFrame = [];
+  coSMT = 0; coSMT = 0; detectedFrame = [];
   for m = 1 : length(idx)
     frame = find(tracks(:,1) == idx(m));
     if ~isempty(frame)
-      distSox = squareform(pdist([cellData(idx(m), 4:5); tracks(frame, 2:3)]));
-      distSox = distSox(1, 2:end);
-      coSox = coSox + sum(distSox < distTol);
-      if sum(distSox < distTol) > 0
-        orSox = orSox + 1;
-        detectedFrame = [detectedFrame; frame(distSox < distTol)];
+      distSMT = squareform(pdist([cellData(idx(m), 4:5); tracks(frame, 2:3)]));
+      distSMT = distSMT(1, 2:end);
+      coSMT = coSMT + sum(distSMT < distTol);
+      if sum(distSMT < distTol) > 0
+        orSMT = orSMT + 1;
+        detectedFrame = [detectedFrame; frame(distSMT < distTol)];
       end
     end
   end
   % onFrame, detectedFrame
-  disp(['Number of Sox2 on last detected GFP spot during OFF state: ' num2str(coSox)])
-  extraData(5) = coSox;
-  extraData(14) = (orSox / length(idx)) * 100;
-  extraData(20) = orSox;
+  disp(['Number of SMT on last detected GFP spot during OFF state: ' num2str(coSMT)])
+  extraData(5) = coSMT;
+  extraData(14) = (orSMT / length(idx)) * 100;
+  extraData(20) = orSMT;
 
 %   idx = find(cellData(:, 3) == 0);
   idx = offFrame;
@@ -701,89 +703,89 @@ for n = 1 :  length(allCells)
   %
 
   idx = find(cellData(:, 1) == 1 & cellData(:, 2) == 0);
-  coSox = 0; orSox = 0;
+  coSMT = 0; orSMT = 0;
   for m = 1 : length(idx)
     frame = find(tracks(:,1) == idx(m));
     if ~isempty(frame)
-      distSox = squareform(pdist([cellData(idx(m), 4:5); tracks(frame, 2:3)]));
-      distSox = distSox(1, 2:end);
-      coSox = coSox + sum(distSox < distTol);
-      if sum(distSox < distTol) > 0
-        orSox = orSox + 1;
+      distSMT = squareform(pdist([cellData(idx(m), 4:5); tracks(frame, 2:3)]));
+      distSMT = distSMT(1, 2:end);
+      coSMT = coSMT + sum(distSMT < distTol);
+      if sum(distSMT < distTol) > 0
+        orSMT = orSMT + 1;
       end
     end
   end
-  disp(['Number of Sox2 on GFP spot when only GFP is detected: ' num2str(coSox)])
-  extraData(6) = coSox;
+  disp(['Number of SMT on GFP spot when only GFP is detected: ' num2str(coSMT)])
+  extraData(6) = coSMT;
 
   idx = find(cellData(:, 1) == 0 & cellData(:, 2) == 1);
-  coSox = 0; orSox = 0;
+  coSMT = 0; orSMT = 0;
   for m = 1 : length(idx)
     frame = find(tracks(:,1) == idx(m));
     if ~isempty(frame)
-      distSox = squareform(pdist([cellData(idx(m), 4:5); tracks(frame, 2:3)]));
-      distSox = distSox(1, 2:end);
-      coSox = coSox + sum(distSox < distTol);
-      if sum(distSox < distTol) > 0
-        orSox = orSox + 1;
+      distSMT = squareform(pdist([cellData(idx(m), 4:5); tracks(frame, 2:3)]));
+      distSMT = distSMT(1, 2:end);
+      coSMT = coSMT + sum(distSMT < distTol);
+      if sum(distSMT < distTol) > 0
+        orSMT = orSMT + 1;
       end
     end
   end
-  disp(['Number of Sox2 on last detected GFP spot when only RFP is detected: ' num2str(coSox)])
-  extraData(7) = coSox;
+  disp(['Number of SMT on last detected GFP spot when only RFP is detected: ' num2str(coSMT)])
+  extraData(7) = coSMT;
 
 %   idx = find(cellData(:, 1) == 0 & cellData(:, 2) == 0);
-%   coSox = 0; orSox = 0;
+%   coSMT = 0; orSMT = 0;
 %   for m = 1 : length(idx)
 %     frame = find(tracks(:,1) == idx(m));
 %     if ~isempty(frame)
-%       distSox = squareform(pdist([cellData(idx(m), 4:5); tracks(frame, 2:3)]));
-%       distSox = distSox(1, 2:end);
-%       coSox = coSox + sum(distSox < distTol);
-%       if sum(distSox < distTol) > 0
-%         orSox = orSox + 1;
+%       distSMT = squareform(pdist([cellData(idx(m), 4:5); tracks(frame, 2:3)]));
+%       distSMT = distSMT(1, 2:end);
+%       coSMT = coSMT + sum(distSMT < distTol);
+%       if sum(distSMT < distTol) > 0
+%         orSMT = orSMT + 1;
 %       end
 %     end
 %   end
-  disp(['Number of Sox2 on last detected GFP spot when neither GFP or RFP is detected: ' num2str(coSox)])
-%   extraData(8) = coSox;
+  disp(['Number of SMT on last detected GFP spot when neither GFP or RFP is detected: ' num2str(coSMT)])
+%   extraData(8) = coSMT;
   extraData(8) = extraData(5) - extraData(6) - extraData(7);
 
 %   idx = find(cellData(:, 3) == 1);
   idx = onFrame;
-  coSox = 0; orSox = 0;
+  coSMT = 0; orSMT = 0;
   for m = 1 : length(idx)
     frame = find(tracks(:,1) == idx(m));
     if ~isempty(frame)
-      distSox = squareform(pdist([cellData(idx(m), 4:5); tracks(frame, 2:3)]));
-      distSox = distSox(1, 2:end);
-      coSox = coSox + length(distSox);
-      if ~isempty(distSox)
-        orSox = orSox + 1;
+      distSMT = squareform(pdist([cellData(idx(m), 4:5); tracks(frame, 2:3)]));
+      distSMT = distSMT(1, 2:end);
+      coSMT = coSMT + length(distSMT);
+      if ~isempty(distSMT)
+        orSMT = orSMT + 1;
       end
     end
   end
-  disp(['Number of Sox2 detected during ON state: ' num2str(coSox)])
+  disp(['Number of SMT detected during ON state: ' num2str(coSMT)])
   disp(['Number of frames in ON state: ' num2str(length(idx))])
-  extraData(9:10) = [coSox, length(idx)];
+  extraData(9:10) = [coSMT, length(idx)];
 
 %   idx = find(cellData(:, 3) == 0);
   idx = offFrame;
-  coSox = 0; orSox = 0;
+  coSMT = 0; orSMT = 0;
   for m = 1 : length(idx)
     frame = find(tracks(:,1) == idx(m));
     if ~isempty(frame)
-      distSox = squareform(pdist([cellData(idx(m), 4:5); tracks(frame, 2:3)]));
-      distSox = distSox(1, 2:end);
-      coSox = coSox + length(distSox);
-      if ~isempty(distSox)
-        orSox = orSox + 1;
+      distSMT = squareform(pdist([cellData(idx(m), 4:5); tracks(frame, 2:3)]));
+      distSMT = distSMT(1, 2:end);
+      coSMT = coSMT + length(distSMT);
+      if ~isempty(distSMT)
+        orSMT = orSMT + 1;
       end
     end
   end
-  disp(['Number of Sox2 detected during OFF state: ' num2str(coSox)])
+  disp(['Number of SMT detected during OFF state: ' num2str(coSMT)])
   disp(['Number of frames in OFF state: ' num2str(length(idx))])
-  extraData(11:12) = [coSox, length(idx)];
+  extraData(11:12) = [coSMT, length(idx)];
   extraData(13) = min(minDist);
   
   cellDataSave = cell(1, 5);
@@ -799,26 +801,26 @@ for n = 1 :  length(allCells)
   extraData(17) = (extraData(2) / extraData(10)) * 100;
   extraData(18) = (extraData(5) / extraData(12)) * 100;
   cellSummaryData = cell(12, 1);
-  cellSummaryData{1} = 'Total number of Sox2 detected:';
-  cellSummaryData{2} = 'Number of Sox2 on GFP spot during ON state:';
-  cellSummaryData{3} = 'Precentage of time GFP spot is covered by Sox2 during ON state:';
-  cellSummaryData{4} = 'Precentage of Sox2 on GFP spot during ON state:';
-  cellSummaryData{5} = 'Number of Sox2 on last detected GFP spot during OFF state:';
-  cellSummaryData{6} = 'Number of Sox2 on GFP spot when only GFP is detected:';
-  cellSummaryData{7} = 'Number of Sox2 on last detected GFP spot when only RFP is detected:';
-  cellSummaryData{8} = 'Number of Sox2 on last detected GFP spot when neither GFP or RFP is detected:';
-  cellSummaryData{9} = 'Number of Sox2 detected during ON state:';
+  cellSummaryData{1} = 'Total number of SMT detected:';
+  cellSummaryData{2} = 'Number of SMT on GFP spot during ON state:';
+  cellSummaryData{3} = 'Precentage of time GFP spot is covered by SMT during ON state:';
+  cellSummaryData{4} = 'Precentage of SMT on GFP spot during ON state:';
+  cellSummaryData{5} = 'Number of SMT on last detected GFP spot during OFF state:';
+  cellSummaryData{6} = 'Number of SMT on GFP spot when only GFP is detected:';
+  cellSummaryData{7} = 'Number of SMT on last detected GFP spot when only RFP is detected:';
+  cellSummaryData{8} = 'Number of SMT on last detected GFP spot when neither GFP or RFP is detected:';
+  cellSummaryData{9} = 'Number of SMT detected during ON state:';
   cellSummaryData{10} = 'Number of frames in ON state:';
-  cellSummaryData{11} = 'Number of Sox2 detected during OFF state:';
+  cellSummaryData{11} = 'Number of SMT detected during OFF state:';
   cellSummaryData{12} = 'Number of frames in OFF state:';
-  cellSummaryData{13} = 'Minimum Distance of Sox2 to GFP:';
-  cellSummaryData{14} = 'Precentage of time GFP spot is covered by Sox2 during OFF state:';
-  cellSummaryData{15} = 'Mean Minimum Distance between Sox2 and GFP During ON state:';
-  cellSummaryData{16} = 'Mean Minimum Distance between Sox2 and GFP During OFF state:';
-  cellSummaryData{17} = 'Visiting frequency of Sox2 on GFP spot during ON state:';
-  cellSummaryData{18} = 'Visiting frequency of Sox2 on GFP spot during OFF state:';
-  cellSummaryData{19} = 'Number of Frames Sox2 on GFP spot during ON state:';
-  cellSummaryData{20} = 'Number of Frames Sox2 on GFP spot during OFF state:';
+  cellSummaryData{13} = 'Minimum Distance of SMT to GFP:';
+  cellSummaryData{14} = 'Precentage of time GFP spot is covered by SMT during OFF state:';
+  cellSummaryData{15} = 'Mean Minimum Distance between SMT and GFP During ON state:';
+  cellSummaryData{16} = 'Mean Minimum Distance between SMT and GFP During OFF state:';
+  cellSummaryData{17} = 'Visiting frequency of SMT on GFP spot during ON state:';
+  cellSummaryData{18} = 'Visiting frequency of SMT on GFP spot during OFF state:';
+  cellSummaryData{19} = 'Number of Frames SMT on GFP spot during ON state:';
+  cellSummaryData{20} = 'Number of Frames SMT on GFP spot during OFF state:';
   cellSummaryData = [cellSummaryData, arrayfun(@num2str,extraData','un',0)];
   writecell(cellSummaryData, [allCells(n).folder, filesep, 'Data', filesep, gfpFile(1:end-4), '_Summary.xls'])
   finalData(n).Extra = extraData;
@@ -852,32 +854,32 @@ for n = 1 :  length(allCells)
   savefig([allCells(n).folder, filesep, 'Data', filesep, gfpFile(1:end-4), '_signal_intensity.fig']);
   1;
 
-  % plot gfp intensity with sox
+  % plot gfp intensity with smt
   figure;
   gfpInt = cellData(1:frameIntervals:length(stackGFP) - 1, 6) .* 3;
   rfpInt = cellData(1:frameIntervals:length(stackGFP) - 1, 7);
   bar(1:frameIntervals:length(stackGFP) - 1, gfpInt, 'g', 'FaceAlpha', 0.3); hold on;
   bar(1:frameIntervals:length(stackGFP) - 1, rfpInt, 'm', 'FaceAlpha', 0.3);
-  title('Mean Intensity of Channels with Sox Occurrence', 'interpreter', 'latex');
+  title('Mean Intensity of Channels with SMT Occurrence', 'interpreter', 'latex');
   xlabel('Frame', 'interpreter', 'latex');
   ylabel('Mean Intensity Detected', 'interpreter', 'latex');
-  plot(1:length(sox2Number), sox2Number' .* max([gfpInt; rfpInt])/2, 'k');
-  plot(1:length(sox2Number), sox2AppearLong' .* max([gfpInt; rfpInt]), 'k');
-  legend('GFP', 'RFP', 'Sox Occurence', 'interpreter', 'latex')
+  plot(1:length(smtNumber), smtNumber' .* max([gfpInt; rfpInt])/2, 'k');
+  plot(1:length(smtNumber), smtAppearLong' .* max([gfpInt; rfpInt]), 'k');
+  legend('GFP', 'RFP', 'SMT Occurence', 'interpreter', 'latex')
   pause(0.5);
-  savefig([allCells(n).folder, filesep, 'Data', filesep, gfpFile(1:end-4), '_signal_intensity_with_sox.fig']);
+  savefig([allCells(n).folder, filesep, 'Data', filesep, gfpFile(1:end-4), '_signal_intensity_with_smt.fig']);
 
   maxGfpInd = find(gfpInt == max(gfpInt));
-  soxInd = find(sox2Number > 0);
+  smtInd = find(smtNumber > 0);
   writematrix(maxGfpInd, [allCells(n).folder, filesep, 'Data', filesep, gfpFile(1:end-4), '_max_gfp_timing.xls']);
-  writematrix(soxInd, [allCells(n).folder, filesep, 'Data', filesep, gfpFile(1:end-4), '_sox_timing.xls']);
+  writematrix(smtInd, [allCells(n).folder, filesep, 'Data', filesep, gfpFile(1:end-4), '_smt_timing.xls']);
 
-  % plotting sox
+  % plotting smt
 %   figure;
-%   soxPlot = stackFISH(1).data;
-%   [counts, intensity] = histcounts(soxPlot(:));
+%   smtPlot = stackFISH(1).data;
+%   [counts, intensity] = histcounts(smtPlot(:));
 %   intOI = intensity(counts > 10);
-%   imshow(imadjust(soxPlot, [intOI(2)/65535, intOI(end)/65535])); hold on;
+%   imshow(imadjust(smtPlot, [intOI(2)/65535, intOI(end)/65535])); hold on;
 %   for i = 1 : length(stackGFP)
 %     trackNum = tracks(tracks(:, 1) == i, 2);
 %     if ~isempty(trackNum)
