@@ -1,5 +1,5 @@
 clear; clc; close all; imtool close all;
-mainDir = 'G:\data'; numb = 2;
+mainDir = uigetdir; numb = 2;
 
 % Adjusting value for minimum and maximum gfp/rfp signals, colocalisation
 % and mobility

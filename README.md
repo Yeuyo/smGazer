@@ -1,4 +1,4 @@
-# smGazer Documentation
+# single molecule Gazer (smGazer) Documentation
 
 Single-molecule tracking (SMT) analysis of any molecule at a fluorescently labelled transcription locus, with per-frame transcriptional state assignment from two reporter channels.
 
@@ -85,7 +85,7 @@ Cells are stored as `allCells(cellNumber)`, so cell numbers must be positive int
 ## 4. Running it
 
 1. Put MATLAB's current folder at the location containing `Batch_MTT_code/`.
-2. Edit `mainDir` and `numb` (line 5).
+2. Edit `numb` (line 5).
 3. Set the detection and tolerance parameters (Section 5).
 4. Run. Results appear in a `Data` subfolder inside each cell's folder, plus `Summary_dwell_time.xls` in `mainDir`.
 
@@ -335,3 +335,10 @@ Note also that at line 241 `smtCorrection` is still an N×2 matrix, so `smtCorre
 The Batch_MTT_code is taken from McSwiggen et al., available at https://github.com/elifesciences-publications/SPT_LocAndTrack/tree/master.
 
 * McSwiggen, D. T. et al. (2019). **Evidence for DNA-mediated nuclear compartmentalization distinct from phase separation.** *eLife*, 8, e47098. https://doi.org/10.7554/eLife.47098
+
+## Acknowledgements
+I would like to express my sincerest gratitude to **Eun Chong Kim** for her steadfast support and compassion throughout the creation of this script and our journey together.Our meeting by chance proved to be the moment that made my life whole. Whenever I found myself lost in moments of doubt, fear and uncertainty, she was my constant, stable anchor. Her enduring kindness and perseverance helped me overcome and navigate one of the darkest periods of my life, and for that I am forever grateful.
+
+<!-- 
+The author would like to express the deepest gratitude to Eun Chong Kim for her unwavering support and compassion during the process of creating this script and the rest of our life journey. It was a chance encounter that we met. However, that single moment that we met make my life whole. You were the constant, stable and unwavering support that is always there when I am lost in the cloud of distrust, weakness, fear. It was her ever perserverance of support and kidness that help me overcome one of the darkest period of my life.
+-->
